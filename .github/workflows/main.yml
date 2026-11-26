@@ -1,0 +1,35 @@
+name: Build iOS IPA
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build unsigned .app
+        run: |
+          xcodebuild -project ShowSystemInfo.xcodeproj \
+            -scheme ShowSystemInfo \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            IPHONEOS_DEPLOYMENT_TARGET=13.0 \
+            build
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "ShowSystemInfo.app" | head -n 1)
+          cp -r "$APP_PATH" Payload/
+          zip -r ShowSystemInfo-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShowSystemInfo-unsigned-ipa
+          path: ShowSystemInfo-unsigned.ipa
